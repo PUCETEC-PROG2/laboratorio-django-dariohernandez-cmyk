@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Detalles del Entrenador
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>{{ trainer.first_name }} {{ trainer.last_name }}</h3>
+    <p>Detalles del entrenador:</p>
+    <ul class="list-group mb-3">
+        <li class="list-group-item"><strong>Nivel:</strong> {{ trainer.level }}</li>
+        <li class="list-group-item"><strong>Fecha de nacimiento:</strong> {{ trainer.birth_date }}</li>
+    </ul>
+
+    <a href="{% url 'index' %}" class="btn btn-secondary">
+        ← Volver a la lista
+    </a>
+</div>
+{% endblock content %}

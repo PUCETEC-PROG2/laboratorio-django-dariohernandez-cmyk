@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Añadir Pokémon{% endblock title %}
+{% block content %}
+<div class="container mt-5">
+  <h3 class="text-center mb-4 text-primary">Agregar un Nuevo Pokémon</h3>
+  
+  <form method="post" enctype="multipart/form-data" class="p-4 border rounded shadow-sm bg-light">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="text-center mt-3">
+      <button type="submit" class="btn btn-success">Guardar Pokémon</button>
+      <a href="{% url 'pokedex:index' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock content %}
