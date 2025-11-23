@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Añadir Pokémon{% endblock title %}
+{% block content %}
+<div class="container mt-5">
+  <h3 class="text-center mb-4 text-primary">Agregar un Nuevo Pokémon</h3>
+  
+  <form method="post">
+    {% csrf_token %}
+   
+    <div class="row d-flex justify-content-center">
+      <div class="col-md-6">
+       <div>
+            <label for="username">Nombre de usuario:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+               <div>
+            <label for="password">Contraseña:</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+      <div class="text-center mt-3">
+        <button type="submit" class="btn btn-success">Ingresar</button>
+        <a href="{% url 'pokedex:index' %}" class="btn btn-secondary">Cancelar</a>
+
+    </div>
+ 
+  </form>
+{% endblock content %}
