@@ -6,9 +6,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('pokedex/', include(('pokedex.urls', 'pokedex'), namespace='pokedex')),
-    path('accounts/', include('django.contrib.auth.urls')),   
-    path('', RedirectView.as_view(url='pokedex/', permanent=False)),  
+    path('pokedex/', include('pokedex.urls')),
+    path('accounts/', include('accounts.urls')),
+    path('api/', include('api.urls')),  
 ]
 
 if settings.DEBUG:
