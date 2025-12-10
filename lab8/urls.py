@@ -3,12 +3,17 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from oauth2_provider import urls as oauth2_urls
+
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/pokedex/', permanent=False)),
     path('admin/', admin.site.urls),
     path('pokedex/', include('pokedex.urls')),
-    path('accounts/', include('accounts.urls')),
-    path('api/', include('api.urls')),  
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('api/', include('api.urls')),
+    path('o/', include(oauth2_urls)),
 ]
 
 if settings.DEBUG:
