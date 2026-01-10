@@ -187,3 +187,12 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+git add .gitignore
+git add .
+git commit -m "Resolver conflicto de merge y excluir db.sqlite3"
+git push origin main
+# SQLite database files 
+*.sqlite3
+*.db
+*.sqlite
+db.sqlite3
