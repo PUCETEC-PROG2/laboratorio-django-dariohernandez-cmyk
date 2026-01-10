@@ -37,9 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
     'pokedex'
-    'api',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
 ]
 
 ROOT_URLCONF = 'lab8.urls'
@@ -140,5 +139,3 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGOUT_REDIRECT_URL = '/pokedex/'
 LOGIN_REDIRECT_URL = '/pokedex/'
 LOGIN_URL = '/accounts/login/'
-
-CORS_ALLOW_ALL_ORIGINS = True
