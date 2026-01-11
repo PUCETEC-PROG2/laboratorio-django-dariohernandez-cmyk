@@ -1,74 +1,43 @@
-from django.http import HttpResponse
-from django.template import loader
-from django.shortcuts import render, redirect
-from django.contrib.auth.views import LoginView
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+import json
 
-from .models import Pokemon, Trainer
-from .forms import PokemonForm
-
-
-
+# Vista principal
 def index(request):
-    pokemons = Pokemon.objects.all()
-    trainers = Trainer.objects.all()
-    template = loader.get_template('index.html')
-    context = {
-        'pokemons': pokemons,
-        'trainers': trainers
-    }
-    return HttpResponse(template.render(context, request))
+    return HttpResponse("¡Bienvenido a la Pokedex!")
 
-
+# Vista de detalle de Pokémon
 def pokemon(request, pokemon_id):
-    pokemon = Pokemon.objects.get(id=pokemon_id)
-    template = loader.get_template('display_pokemon.html')
-    context = {'pokemon': pokemon}
-    return HttpResponse(template.render(context, request))
+    return HttpResponse(f"Detalle del Pokémon con ID {pokemon_id}")
 
-
-def trainers_view(request):  
-    all_trainers = Trainer.objects.all()
-    template = loader.get_template('trainers.html')
-    context = {'trainers': all_trainers}
-    return HttpResponse(template.render(context, request))
-
-
+# Vista de detalle de entrenador
 def trainer(request, trainer_id):
-    trainer = Trainer.objects.get(id=trainer_id)
-    template = loader.get_template('display_trainer.html')
-    context = {'trainer': trainer}
-    return HttpResponse(template.render(context, request))
+    return HttpResponse(f"Detalle del entrenador con ID {trainer_id}")
 
-@login_required
+# Agregar un Pokémon
 def add_pokemon(request):
-    if request.method == "POST":
-        form = PokemonForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect("pokedex:index")
-    else:
-        form = PokemonForm()
-    return render(request, "pokemon_form.html", {"form": form})
-@login_required
+    return HttpResponse("Agregar un Pokémon")
+
+# Editar un Pokémon
 def edit_pokemon(request, pokemon_id):
-    pokemon = Pokemon.objects.get(id=pokemon_id)
-    if request.method == "POST":
-        form = PokemonForm(request.POST, request.FILES, instance=pokemon)
-        if form.is_valid():
-            form.save()
-            return redirect("pokedex:index")
-    else:
-        form = PokemonForm(instance=pokemon)
-    return render(request, "pokemon_form.html", {"form": form})
+    return HttpResponse(f"Editar Pokémon con ID {pokemon_id}")
 
-@login_required
+# Eliminar un Pokémon
 def delete_pokemon(request, pokemon_id):
-    pokemon = Pokemon.objects.get(id=pokemon_id)
-    pokemon.delete()
-    return redirect("pokedex:index")
+    return HttpResponse(f"Eliminar Pokémon con ID {pokemon_id}")
 
-
-class CustomLoginView(LoginView):
-    template_name = 'login.html'
-   
+# API para registro
+@csrf_exempt
+def api_register(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user = User.objects.create_user(
+                username=data['username'],
+                password=data['password']
+            )
+            return JsonResponse({'message': 'Usuario creado correctamente'}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
