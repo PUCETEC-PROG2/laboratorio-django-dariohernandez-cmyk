@@ -1,0 +1,532 @@
+﻿@model Pokedex.ViewModels.TypeDetailsViewModel
+@using System.Linq
+
+@{
+    // Whether a type is currently selected
+    var hasSelection = !string.IsNullOrWhiteSpace(Model?.TypeName);
+
+    ViewData["Title"] = hasSelection
+        ? $"{Model.TypeName} Type Details"
+        : "Type Details";
+
+    // Helpers
+    string Cap(string s) => string.IsNullOrWhiteSpace(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+    string Lower(string s) => (s ?? "").ToLowerInvariant();
+
+    // Accept relative local URLs AND absolute same-origin URLs (convert to relative)
+    string SafeLocal(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+
+        if (Url.IsLocalUrl(url)) return url; // already relative & local
+
+        try
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                var req = Context?.Request;
+                if (req != null)
+                {
+                    // Build "origin" for current app and for the incoming URI
+                    var thisOrigin = $"{req.Scheme}://{req.Host}";
+                    var otherOrigin = $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? "" : $":{uri.Port}")}";
+
+                    if (string.Equals(thisOrigin, otherOrigin, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Convert absolute same-origin to relative path+query (safe)
+                        var rel = uri.PathAndQuery;
+                        return Url.IsLocalUrl(rel) ? rel : null;
+                    }
+                }
+            }
+        }
+        catch { /* ignore */ }
+
+        return null;
+    }
+
+    // Gather possible "back" sources
+    var fromVmReturn = SafeLocal(Model?.ReturnUrl);
+    var fromViewBagReturn = SafeLocal(ViewBag.ReturnUrl as string);
+    var fromQueryReturn = SafeLocal(Context?.Request?.Query["returnUrl"].ToString());
+    var fromReferer = SafeLocal(Context?.Request?.Headers["Referer"].ToString());
+
+    // Choose best available (in priority order)
+    var back = fromVmReturn
+               ?? fromViewBagReturn
+               ?? fromQueryReturn
+               ?? fromReferer
+               ?? Url.Action("Index", "Home");
+
+    // Prevent loops: if "back" is the current URL, fall back to Home.
+    var currentUrl = (Context?.Request?.Path + Context?.Request?.QueryString).ToString();
+    if (!string.IsNullOrWhiteSpace(currentUrl) && string.Equals(back, currentUrl, System.StringComparison.OrdinalIgnoreCase))
+    {
+        back = Url.Action("Index", "Home");
+    }
+
+    var selfLower = hasSelection ? Lower(Model.TypeName) : "";
+}
+
+<div class="type-detail-page">
+    <div class="top-bar">
+        <!-- Fallback href is the computed safe local URL; JS will try history.back() first -->
+        <a id="backLink" class="nav-arrow back-link" href="@back" data-fallback="@back">&larr; Back</a>
+    </div>
+
+    <header class="type-header">
+        @if (hasSelection)
+        {
+            <h1 class="type-title">@Cap(Model.TypeName)</h1>
+            <span class="pokemon-type type-@selfLower type-chip type-chip-lg">
+                @Cap(Model.TypeName)
+            </span>
+        }
+        else
+        {
+            <h1 class="type-title">Please select a type</h1>
+        }
+    </header>
+
+    @if (hasSelection)
+    {
+        <section class="type-sections">
+            <!-- Strengths -->
+            <div class="type-card">
+                <h2 class="type-card-title">Strengths <span class="muted">(Deals 2× To)</span></h2>
+                <div class="type-badges">
+                    @if (Model.Strengths?.Any() == true)
+                    {
+                        foreach (var s in Model.Strengths)
+                        {
+                            var lower = Lower(s);
+                            <a class="pokemon-type type-@lower type-chip"
+                               href="@Url.Action("Details", "Types", new { name = s, returnUrl = back })"
+                               role="button"
+                               title="Go to @Cap(s) type">
+                                @Cap(s)
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="muted">None</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Weak to -->
+            <div class="type-card">
+                <h2 class="type-card-title">Weak to <span class="muted">(Takes 2× From)</span></h2>
+                <div class="type-badges">
+                    @if (Model.Weaknesses?.Any() == true)
+                    {
+                        foreach (var w in Model.Weaknesses)
+                        {
+                            var lower = Lower(w);
+                            <a class="pokemon-type type-@lower type-chip"
+                               href="@Url.Action("Details", "Types", new { name = w, returnUrl = back })"
+                               role="button"
+                               title="Go to @Cap(w) type">
+                                @Cap(w)
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="muted">None</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Resistant to -->
+            <div class="type-card">
+                <h2 class="type-card-title">Resistant to <span class="muted">(Takes ½× From)</span></h2>
+                <div class="type-badges">
+                    @if (Model.Resistances?.Any() == true)
+                    {
+                        foreach (var r in Model.Resistances)
+                        {
+                            var lower = Lower(r);
+                            <a class="pokemon-type type-@lower type-chip"
+                               href="@Url.Action("Details", "Types", new { name = r, returnUrl = back })"
+                               role="button"
+                               title="Go to @Cap(r) type">
+                                @Cap(r)
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="muted">None</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Immune to -->
+            <div class="type-card">
+                <h2 class="type-card-title">Immune to <span class="muted">(Takes 0× From)</span></h2>
+                <div class="type-badges">
+                    @if (Model.Immunities?.Any() == true)
+                    {
+                        foreach (var i in Model.Immunities)
+                        {
+                            var lower = Lower(i);
+                            <a class="pokemon-type type-@lower type-chip"
+                               href="@Url.Action("Details", "Types", new { name = i, returnUrl = back })"
+                               role="button"
+                               title="Go to @Cap(i) type">
+                                @Cap(i)
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="muted">None</span>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>No type is currently selected. Choose one below to view strengths, weaknesses, resistances, and immunities.</p>
+        </div>
+    }
+
+    @if (Model.AllTypes?.Any() == true)
+    {
+        <section class="all-types">
+            <h3 class="all-types-title">Jump to Type</h3>
+            <div class="type-badges">
+                @foreach (var t in Model.AllTypes)
+                {
+                    var lower = Lower(t);
+                    <a class="pokemon-type type-@lower type-chip"
+                       href="@Url.Action("Details", "Types", new { name = t, returnUrl = back })"
+                       role="button">@Cap(t)</a>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<style>
+    /* ===== Shared Pokédex Theme ===== */
+    :root {
+        --dex-red: #D32F2F;
+        --dex-dark: #8B0000;
+        --dex-yellow: #FFCB05;
+        --dex-blue: #3D7DCA;
+        --dex-light: #F5F7FB;
+        --chip: #efefef;
+        /* Pokémon type palette */
+        --type-normal: #D3D3D3;
+        --type-fire: #EE8130;
+        --type-water: #6390F0;
+        --type-electric: #F7D02C;
+        --type-grass: #7AC74C;
+        --type-ice: #96D9D6;
+        --type-fighting: #C22E28;
+        --type-poison: #4B0082;
+        --type-ground: #E2BF65;
+        --type-flying: #ADD8E6;
+        --type-psychic: #F95587;
+        --type-bug: #A6B91A;
+        --type-rock: #B6A136;
+        --type-ghost: #735797;
+        --type-dragon: #6F35FC;
+        --type-dark: #705746;
+        --type-steel: #B7B7CE;
+        --type-fairy: #D685AD;
+    }
+
+    /* Background & global fonts */
+    body {
+        margin: 0;
+        background: linear-gradient(180deg, var(--dex-red) 0%, var(--dex-dark) 100%);
+        font-family: 'Montserrat', system-ui, sans-serif;
+        color: #111;
+    }
+
+    h1, h2 {
+        font-family: 'Press Start 2P', cursive;
+        letter-spacing: 1px;
+    }
+
+    /* ===== Type Details Container ===== */
+    .type-detail-page {
+        max-width: 1200px;
+        margin: 40px auto;
+        background: var(--dex-light);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        border: 4px solid var(--dex-yellow);
+    }
+
+    /* Back link */
+    .top-bar {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .back-link {
+        text-decoration: none;
+        background: var(--dex-blue);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        transition: transform .1s ease, filter .1s ease;
+    }
+
+        .back-link:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+    /* Header */
+    .type-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid var(--dex-blue);
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+    }
+
+    .type-title {
+        color: var(--dex-blue);
+        text-shadow: 0 2px 0 rgba(0,0,0,.1);
+        margin: 0;
+        font-size: 24px;
+    }
+
+    .type-subtitle {
+        color: var(--dex-dark);
+        font-size: 16px;
+    }
+
+    /* Sections grid */
+    .type-sections {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    @@media (max-width: 900px) {
+        .type-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Empty state (no selection) */
+    .empty-state {
+        background: white;
+        border: 2px dashed var(--dex-blue);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 16px rgba(0,0,0,.1);
+        color: #333;
+        margin-bottom: 16px;
+    }
+
+        .empty-state p {
+            margin: 0;
+            font-weight: 600;
+        }
+
+    /* Cards */
+    .type-card {
+        background: white;
+        border: 2px solid var(--dex-blue);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 16px rgba(0,0,0,.1);
+    }
+
+    .type-card-title {
+        color: var(--dex-blue);
+        font-size: 14px;
+        margin: 0 0 10px 0;
+    }
+
+    .muted {
+        color: #555;
+    }
+
+    /* Badge group */
+    .type-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Base chip */
+    .pokemon-type {
+        background: var(--dex-blue);
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: capitalize;
+        border: 1px solid rgba(0,0,0,.08);
+        transition: transform .1s ease, box-shadow .1s ease;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+        .pokemon-type:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,.15);
+        }
+
+    /* Large self chip */
+    .type-chip-lg {
+        font-size: 14px;
+        padding: 8px 14px;
+    }
+
+    /* All types list */
+    .all-types {
+        margin-top: 24px;
+    }
+
+    .all-types-title {
+        font-size: 14px;
+        color: var(--dex-dark);
+        margin-bottom: 10px;
+        border-bottom: 2px solid var(--dex-blue);
+        display: inline-block;
+    }
+
+    /* ===== Type color mapping ===== */
+    .type-normal {
+        background: var(--type-normal);
+        color: #000;
+    }
+
+    .type-fire {
+        background: var(--type-fire);
+        color: #fff;
+    }
+
+    .type-water {
+        background: var(--type-water);
+        color: #fff;
+    }
+
+    .type-electric {
+        background: var(--type-electric);
+        color: #000;
+    }
+
+    .type-grass {
+        background: var(--type-grass);
+        color: #000;
+    }
+
+    .type-ice {
+        background: var(--type-ice);
+        color: #000;
+    }
+
+    .type-fighting {
+        background: var(--type-fighting);
+        color: #fff;
+    }
+
+    .type-poison {
+        background: var(--type-poison);
+        color: #fff;
+    }
+
+    .type-ground {
+        background: var(--type-ground);
+        color: #000;
+    }
+
+    .type-flying {
+        background: var(--type-flying);
+        color: #000;
+    }
+
+    .type-psychic {
+        background: var(--type-psychic);
+        color: #fff;
+    }
+
+    .type-bug {
+        background: var(--type-bug);
+        color: #000;
+    }
+
+    .type-rock {
+        background: var(--type-rock);
+        color: #000;
+    }
+
+    .type-ghost {
+        background: var(--type-ghost);
+        color: #fff;
+    }
+
+    .type-dragon {
+        background: var(--type-dragon);
+        color: #fff;
+    }
+
+    .type-dark {
+        background: var(--type-dark);
+        color: #fff;
+    }
+
+    .type-steel {
+        background: var(--type-steel);
+        color: #000;
+    }
+
+    .type-fairy {
+        background: var(--type-fairy);
+        color: #000;
+    }
+
+    /* Page title */
+    .pokemon-title {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 32px;
+        text-align: center;
+        color: var(--dex-yellow);
+        text-shadow: -3px 3px 0 var(--dex-blue), 3px 3px 0 var(--dex-blue), 3px -3px 0 var(--dex-blue), -3px -3px 0 var(--dex-blue);
+        margin: 0 0 24px 0;
+    }
+</style>
+
+<script>
+    (function () {
+      // Prefer client-side history when available to return to the exact previous page/position.
+      const link = document.getElementById('backLink');
+      if (!link) return;
+
+      link.addEventListener('click', function (e) {
+        // Only intercept if there *is* a referrer on the same origin
+        const ref = document.referrer;
+        if (ref) {
+          try {
+            const refUrl = new URL(ref, window.location.origin);
+            if (refUrl.origin === window.location.origin) {
+              e.preventDefault();
+              // history.back keeps scroll & state when possible
+              window.history.back();
+              return;
+            }
+          } catch (_) { /* ignore parse issues */ }
+        }
+        // Otherwise, let the anchor's href (safe server-computed fallback) handle navigation.
+      });
+    })();
+</script>

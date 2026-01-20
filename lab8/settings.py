@@ -37,8 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pokedex',          
-    'oauth2_provider',  
+
+    'rest_framework',     
+    'oauth2_provider',
+
+    'pokedex',              
+    'trainers'
 
 ]
 
